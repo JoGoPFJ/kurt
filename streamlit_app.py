@@ -1,9 +1,8 @@
 """
 Streamlit Web-App: Q&A Chatbot für die Feldpost von Kurt Siegeler (1944–1947)
 
-Voraussetzungen (in requirements.txt):
-    streamlit
-    google-genai
+Voraussetzungen:
+    pip install streamlit google-genai
 
 Ausführung:
     export GEMINI_API_KEY="DEIN_API_KEY"
@@ -31,22 +30,22 @@ st.caption("Ein interaktiver KI-Chatbot zur Erkundung der historischen Feldpostb
 # 2. Seitenleiste: Einstellungen & Hintergrund
 # ------------------------------------------------------------------------------
 with st.sidebar:
-    st.header("⚙️ Einstellungen")
+    st.header("⚙️ Einstellungen & Info")
     
     # API Key Eingabe
     api_key_input = st.text_input(
         "Google Gemini API Key",
         type="password",
         value=os.environ.get("GEMINI_API_KEY", ""),
-        help="Gib hier deinen Gemini API Key ein oder hinterlege ihn in Streamlit Cloud unter Secrets."
+        help="Gib hier deinen Gemini API Key ein oder setze die Umgebungsvariable GEMINI_API_KEY."
     )
-    
-    # Modell-Auswahl (Aktuelle Google Gemini Modelle)
-    model_choice = st.selectbox(
-        "Gemini Modell",
-        options=["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"],
+
+    # Modellauswahl
+    selected_model = st.selectbox(
+        "Gemini Modell wählen",
+        options=["gemini-3.6-flash", "gemini-3.0-flash", "gemini-2.5-flash"],
         index=0,
-        help="Empfohlen: gemini-2.5-flash für schnelle und präzise Antworten."
+        help="Standardmodell ist gemini-3.6-flash."
     )
     
     st.divider()
@@ -63,7 +62,7 @@ with st.sidebar:
 # ------------------------------------------------------------------------------
 SYSTEM_INSTRUCTION = """
 Du bist ein historischer Dokumenten-Assistent für die Briefsammlung "Feldpost von Kurt Siegeler" (1944–1947).
-Deine Aufgabe ist es, Fragen von Nutzerinnen und Nutzern präzise, sachlich und quellentreu zu beantworten.
+Deine Aufgabe ist es, Fragen von Nutzerinnen und Nutzer präzise, sachlich und quellentreu zu beantworten.
 
 Verhaltensregeln:
 1. Beantworte Fragen auf Basis des historischen Kontextes der Briefe von Kurt Siegeler, seiner Frau Elisabeth und Verwandten.
@@ -98,7 +97,7 @@ user_prompt = st.chat_input("Stelle eine Frage zu den Briefen (z. B. 'Was schrie
 if user_prompt:
     api_key = api_key_input or os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        st.error("Bitte gib einen gültigen Gemini API Key in der Seitenleiste ein oder hinterlege GEMINI_API_KEY in den Streamlit Secrets.")
+        st.error("Bitte gib einen gültigen Gemini API Key in der Seitenleiste ein.")
         st.stop()
 
     # Benutzernachricht anzeigen & speichern
@@ -118,7 +117,7 @@ if user_prompt:
                     contents.append(types.Content(role=role, parts=[types.Part.from_text(text=m["content"])]))
 
                 response = client.models.generate_content(
-                    model=model_choice,
+                    model=selected_model,
                     contents=contents,
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_INSTRUCTION,
@@ -131,5 +130,4 @@ if user_prompt:
                 st.session_state.messages.append({"role": "assistant", "content": reply_text})
 
             except Exception as e:
-                st.error(f"Fehler bei der API-Anfrage an das Modell '{model_choice}': {e}")
-                st.info("Tipp: Wähle in der Seitenleiste 'gemini-2.5-flash' als Modell aus.")
+                st.error(f"Fehler bei der API-Anfrage an das Modell '{selected_model}': {e}")
